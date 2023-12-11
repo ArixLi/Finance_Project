@@ -7,10 +7,11 @@ data = pd.read_csv('good_w_vix.csv').iloc[:, 1:]
 
 # delete open and high price columns, since we only focus on their difference (w.r.t. to open price's ratio)
 # same for close.
-data = data.drop(['Open', 'Close', 'High', 'High_Open'], axis=1)
+raw_price = data.iloc[:, 0].to_numpy().astype(float)
+data = data.drop(['Open', 'Close', 'High'], axis=1)
 
 # get the missing data positions and the fill-mask
-mask_filled = data.isna().to_numpy().astype(int)
+mask_filled = data.isna().to_numpy().astype(int)[:, :-2]
 
 # fill the missing data by the mean value of each column
 data_filled = data.fillna(data.mean())
@@ -22,8 +23,9 @@ feature_normalized = feature_normalized.to_numpy().astype(float)
 
 # Add labels
 label = data_filled.iloc[:, -2:].to_numpy().astype(float)
-data_normalized = np.hstack([feature_normalized, label])
+data_normalized = np.hstack([feature_normalized, label, raw_price.reshape(-1, 1)])
 
+print(mask_filled.shape, data_normalized.shape)
 # save the data
 np.save('mask_vix.npy', mask_filled)
 np.save('data_vix.npy', data_normalized)
