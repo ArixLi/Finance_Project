@@ -4,7 +4,7 @@ import torch
 
 class MyDataset(Dataset):
     def __init__(self, data, args):
-        self.feature = data[:, :-1]
+        self.feature = data[:, :-1, :-1]
         self.label = data[:, -1, -1]
         self.label = torch.where(self.label >= args.delta, 1.0, 0.0)
 
