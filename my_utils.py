@@ -11,8 +11,8 @@ def split_data(data, args):
     :return: the training and validation sets
     """
     wrapped_data = []
-    for i in range(args.len_days, len(data)-args.len_days-1):
-        cur_entity = data[i:i + args.len_days+1]
+    for i in range(0, len(data) - args.len_days - 1):
+        cur_entity = data[i: i + args.len_days + 1]
         wrapped_data.append(cur_entity)
     wrapped_data = np.stack(wrapped_data)
     train_size = int(len(wrapped_data) * 0.7)
@@ -46,22 +46,67 @@ def profit_and_loss(pred, data, args):
 class SimpleLinearModel(nn.Module):
     def __init__(self,
                  input_size: int = 1,
-                 hidden_size: int = 256,
-                 output_size: int = 1,
-                 days: int = 30):
+                 days: int = 30,
+                 hidden_size: int = 512,
+                 output_size: int = 1):
         super(SimpleLinearModel, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.act1 = nn.Sigmoid()
-        self.output_layer1 = nn.Linear(hidden_size, output_size)
-        self.fc3 = nn.Linear(days, hidden_size)
-        self.act3 = nn.Sigmoid()
-        self.output_layer2 = nn.Linear(hidden_size, output_size)
+        self.fc1 = nn.Linear(input_size * days, hidden_size)
+        self.act1 = nn.Tanh()
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.act2 = nn.Tanh()
+        self.fc3 = nn.Linear(hidden_size, hidden_size)
+        self.act3 = nn.Tanh()
+        self.output_layer = nn.Linear(hidden_size, output_size)
         self.sigmoid = nn.Sigmoid()
 
-    # Note that our output is the predicted High_Open_Ratio
+    # Note that our output is the predicted P(x >= High_Open_Ratio)
     def forward(self, x):
+        cur_bs = x.size(0)
+        x = x.view(cur_bs, -1).contiguous()
         x = self.act1(self.fc1(x))
-        x = self.output_layer1(x)
-        x = x.squeeze(-1).contiguous()
+        x = self.act2(self.fc2(x))
         x = self.act3(self.fc3(x))
-        return self.sigmoid(self.output_layer2(x))
+        return self.sigmoid(self.output_layer(x))
+
+
+def pca(x, min_explained_var=0.99):
+    """
+    Perform Principal Component Analysis (PCA) on the input data.
+
+    Parameters:
+    - x: Input data matrix of shape (n_samples, n_features).
+    - min_explained_var: Minimum cumulative explained variance ratio to retain.
+
+    Returns:
+    - transformed_data: Transformed data matrix.
+    - components: Principal components (eigenvectors).
+    - explained_var: Explained variance of each principal component.
+    """
+    # Center the data by subtracting the mean of each feature
+    mean_x = np.mean(x, axis=0)
+    centered_x = x - mean_x
+
+    # Calculate the covariance matrix
+    cov_matrix = np.cov(centered_x, rowvar=False)
+
+    # Calculate eigenvectors and eigenvalues
+    eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+
+    # Sort eigenvectors by decreasing eigenvalues
+    sorted_indices = np.argsort(eigenvalues)[::-1]
+    eigenvectors = eigenvectors[:, sorted_indices]
+
+    # Normalize eigenvalues to get explained variance ratios
+    explained_var = eigenvalues[sorted_indices] / np.sum(eigenvalues)
+
+    # Determine the number of components to retain
+    cum_explained_var = np.cumsum(explained_var)
+    num_components = np.argmax(cum_explained_var >= min_explained_var) + 1
+
+    # Retain only the top 'num_components' components
+    eigenvectors = eigenvectors[:, :num_components]
+
+    # Project the data onto the new basis
+    transformed_data = centered_x.dot(eigenvectors)
+
+    return transformed_data, eigenvectors, explained_var[:num_components]

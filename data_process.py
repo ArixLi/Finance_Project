@@ -3,7 +3,7 @@ import numpy as np
 
 
 # import data from csv file, exclude the first column Date since we will treat it as a time-series data
-data = pd.read_csv('good_w_vix.csv').iloc[:, 1:]
+data = pd.read_csv('dataset/good_w_vix.csv').iloc[:, 1:]
 
 # delete open and high price columns, since we only focus on their difference (w.r.t. to open price's ratio)
 # same for close.
@@ -27,5 +27,5 @@ data_normalized = np.hstack([feature_normalized, label, raw_price.reshape(-1, 1)
 
 print(mask_filled.shape, data_normalized.shape)
 # save the data
-np.save('mask_vix.npy', mask_filled)
-np.save('data_vix.npy', data_normalized)
+np.save('dataset/mask_vix.npy', mask_filled)
+np.save('dataset/data_vix.npy', data_normalized)

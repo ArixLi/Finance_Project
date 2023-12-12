@@ -7,6 +7,7 @@ from tqdm import tqdm
 import argparse
 from dataloader import MyDataset
 from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score
 import matplotlib.pyplot as plt
 import my_utils as ut
 import logging
@@ -15,9 +16,9 @@ import logging
 def main():
     parser = argparse.ArgumentParser(
         description='Predict the High_Open_Ratio with historical data')
-    parser.add_argument('--num_epochs', type=int, default=7, help='number of epochs to train the soft-prompt')
-    parser.add_argument('--bs', type=int, default=8, help='batch size')
-    parser.add_argument('--delta', type=float, default=0.1, help='threshold for entering trading (%)')
+    parser.add_argument('--num_epochs', type=int, default=15, help='number of epochs to train the soft-prompt')
+    parser.add_argument('--bs', type=int, default=16, help='batch size')
+    parser.add_argument('--delta', type=float, default=0.08, help='threshold for entering trading (%)')
     parser.add_argument('--threshold', type=float, default=0.55, help='min confidence level')
     parser.add_argument('--len_days', type=int, default=30, help='the number of days for an entity')
     parser.add_argument('--lr', type=float, default=5e-3, help='learning rate')
@@ -25,9 +26,9 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    data = np.load('data_vix.npy')
+    data = np.load('dataset/pca_data_vix.npy')
     ratio_raw_price = data[:, -3:]
-    data = data[:, :-1]
+    data = data[:, :-2]
     train_data, val_data = ut.split_data(data, args)
     train_data = torch.tensor(train_data, dtype=torch.float32)
     val_data = torch.tensor(val_data, dtype=torch.float32)
@@ -37,8 +38,8 @@ def main():
     val_ds = DataLoader(MyDataset(val_data, args), batch_size=args.bs,
                         shuffle=True, num_workers=0)
 
-    model = ut.SimpleLinearModel(input_size=train_data.size(-1), days=args.len_days)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    model = ut.SimpleLinearModel(input_size=train_data.size(-1)-1, days=args.len_days)
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
     loss_fn = nn.BCELoss()
 
     file_name = f"SimpleModel_{args.len_days}"
@@ -84,6 +85,7 @@ def main():
             pred = np.concatenate(pred, axis=0).reshape(-1)
             PL = ut.profit_and_loss(pred, ratio_raw_price[-len(pred):], args)
             if epoch+1 == args.num_epochs:
+                print(pred)
                 gt = ratio_raw_price[-len(pred):, 0]
                 gt = np.where(gt > args.delta, 1, 0)
                 fpr, tpr, thresholds = roc_curve(gt, pred)
@@ -105,6 +107,19 @@ def main():
     plt.title('Receiver Operating Characteristic (ROC) Curve')
     plt.legend(loc='lower right')
     plt.show()
+
+    pred = np.where(pred >= args.threshold, 1, 0)
+    print(pred)
+    conf_matrix = confusion_matrix(gt, pred)
+    precision = precision_score(gt, pred)
+    recall = recall_score(gt, pred)
+    f1 = f1_score(gt, pred)
+
+    print("Confusion Matrix:")
+    print(conf_matrix)
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    print(f"F1 Score: {f1:.4f}")
 
 
 if __name__ == "__main__":
