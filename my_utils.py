@@ -30,10 +30,11 @@ def profit_and_loss(pred, data, args):
     :param args: the arguments
     :return: the P&L results tot_PL
     """
-    delta = args.threshold
+    delta = args.delta
+    threshold = args.threshold
     tot_PL = 0
     for i in range(pred.shape[0]):
-        if pred[i] >= delta:
+        if pred[i] >= threshold:
             if data[i, 0] >= delta:
                 tot_PL += (data[i, 0] * data[i, 2] * 0.01)
             else:
@@ -47,7 +48,7 @@ class SimpleLinearModel(nn.Module):
     def __init__(self,
                  input_size: int = 1,
                  days: int = 30,
-                 hidden_size: int = 512,
+                 hidden_size: int = 256,
                  output_size: int = 1):
         super(SimpleLinearModel, self).__init__()
         self.fc1 = nn.Linear(input_size * days, hidden_size)

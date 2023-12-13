@@ -19,13 +19,16 @@ def main():
     parser.add_argument('--num_epochs', type=int, default=15, help='number of epochs to train the soft-prompt')
     parser.add_argument('--bs', type=int, default=16, help='batch size')
     parser.add_argument('--delta', type=float, default=0.08, help='threshold for entering trading (%)')
-    parser.add_argument('--threshold', type=float, default=0.55, help='min confidence level')
-    parser.add_argument('--len_days', type=int, default=30, help='the number of days for an entity')
+    parser.add_argument('--threshold', type=float, default=0.45, help='min confidence level')
+    parser.add_argument('--len_days', type=int, default=5, help='the number of days for an entity')
     parser.add_argument('--lr', type=float, default=5e-3, help='learning rate')
     args = parser.parse_args()
 
+    # Detect if there is a GPU and CUDA support and set random seed for reproducible results
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    torch.manual_seed(42)
 
+    # load data
     data = np.load('dataset/pca_data_vix.npy')
     ratio_raw_price = data[:, -3:]
     data = data[:, :-2]
@@ -38,15 +41,18 @@ def main():
     val_ds = DataLoader(MyDataset(val_data, args), batch_size=args.bs,
                         shuffle=True, num_workers=0)
 
+    # Init model, optimizer, loss_function
     model = ut.SimpleLinearModel(input_size=train_data.size(-1)-1, days=args.len_days)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
     loss_fn = nn.BCELoss()
 
+    # define where to store the training logs
     file_name = f"SimpleModel_{args.len_days}"
     writer = SummaryWriter('logs/' + file_name)
 
     model.to(device)
 
+    # train the model
     for epoch in range(args.num_epochs):
         model.train()
         tot_loss = 0
@@ -66,6 +72,7 @@ def main():
             loop.set_description(f"Train Epoch: [{epoch + 1}/{args.num_epochs}]")
             loop.set_postfix(loss=loss.item())
 
+        # Validation
         tr_loss = tot_loss / len(train_ds)
         tot_loss = 0
         pred = []
@@ -85,7 +92,7 @@ def main():
             pred = np.concatenate(pred, axis=0).reshape(-1)
             PL = ut.profit_and_loss(pred, ratio_raw_price[-len(pred):], args)
             if epoch+1 == args.num_epochs:
-                print(pred)
+                print(PL)
                 gt = ratio_raw_price[-len(pred):, 0]
                 gt = np.where(gt > args.delta, 1, 0)
                 fpr, tpr, thresholds = roc_curve(gt, pred)
@@ -109,7 +116,6 @@ def main():
     plt.show()
 
     pred = np.where(pred >= args.threshold, 1, 0)
-    print(pred)
     conf_matrix = confusion_matrix(gt, pred)
     precision = precision_score(gt, pred)
     recall = recall_score(gt, pred)

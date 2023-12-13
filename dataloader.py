@@ -2,6 +2,7 @@ from torch.utils.data import Dataset
 import torch
 
 
+# Write the override dataset class for our NN model
 class MyDataset(Dataset):
     def __init__(self, data, args):
         self.feature = data[:, :-1, :-1]

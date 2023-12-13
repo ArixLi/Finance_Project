@@ -3,6 +3,7 @@ import numpy as np
 import my_utils as ut
 
 
+# Get the PCA for the data set
 raw_data = np.load('dataset/data_vix.npy')
 invariants = raw_data[:, -3:]
 raw_data = raw_data[:, :-3]

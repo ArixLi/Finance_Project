@@ -16,20 +16,24 @@ def main():
         description='Predict the High_Open_Ratio with historical data with XGBoost')
     parser.add_argument('--delta', type=float, default=0.08, help='threshold for entering trading (%)')
     parser.add_argument('--threshold', type=float, default=0.55, help='min confidence level')
-    parser.add_argument('--len_days', type=int, default=30, help='the number of days for an entity')
+    parser.add_argument('--len_days', type=int, default=1, help='the number of days for an entity')
     args = parser.parse_args()
 
-    # Load a sample breast cancer dataset (you can replace this with your dataset)
+    # Load the dataset
     data = np.load('dataset/pca_data_vix.npy')
     ratio_raw_price = data[:, -3:]
-    x = data[:, :-2]
+    data = data[:, :-2]
+
+    # split the data to fixed time-frame and labels
     train_data, val_data = ut.split_data(data, args)
     train_feature, train_label = train_data[:, :-1], train_data[:, -1]
     val_feature, val_label = val_data[:, :-1], val_data[:, -1]
 
+    # flat the time-frame into one dimension
     train_feature = train_feature.reshape(train_feature.shape[0], -1)
     val_feature = val_feature.reshape(val_feature.shape[0], -1)
 
+    # convert the labels to 0/1 labels according to their values w.r.t the setting delta
     train_label = np.where(train_label >= args.delta, 1.0, 0)
     val_label = np.where(val_label >= args.delta, 1.0, 0)
 
@@ -46,15 +50,16 @@ def main():
         'n_estimators': 100,
         'subsample': 0.8,
         'colsample_bytree': 0.8,
-        'seed': 42
+        'seed': 43
     }
 
     # Train the XGBoost model
     model = xgb.train(params, dtrain, num_boost_round=100, evals=[(dtest, 'eval')], early_stopping_rounds=10)
 
-    # Make predictions on the test set
+    # Make predictions on the test set, the probability for being class 0 (not long)
     pred = np.array(model.predict(dtest)[:, 0])
 
+    # get roc and auc for the classification
     gt = ratio_raw_price[-len(pred):, 0]
     gt = np.where(gt > args.delta, 1, 0)
     fpr, tpr, thresholds = roc_curve(gt, pred)
@@ -71,18 +76,23 @@ def main():
     plt.legend(loc='lower right')
     plt.show()
 
-    pred = np.where(pred >= args.threshold, 0, 1)
+    # convert prediction to binary format and get confusion matrix
+    bin_pred = np.where(pred >= args.threshold, 0, 1)
 
-    conf_matrix = confusion_matrix(gt, pred)
-    precision = precision_score(gt, pred)
-    recall = recall_score(gt, pred)
-    f1 = f1_score(gt, pred)
+    conf_matrix = confusion_matrix(gt, bin_pred)
+    precision = precision_score(gt, bin_pred)
+    recall = recall_score(gt, bin_pred)
+    f1 = f1_score(gt, bin_pred)
 
     print("Confusion Matrix:")
     print(conf_matrix)
     print(f"Precision: {precision:.4f}")
     print(f"Recall: {recall:.4f}")
     print(f"F1 Score: {f1:.4f}")
+
+    # Compute the profit and loss value
+    PL = ut.profit_and_loss(pred, ratio_raw_price, args)
+    print(PL)
 
 
 if __name__ == "__main__":
