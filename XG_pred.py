@@ -15,7 +15,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='Predict the High_Open_Ratio with historical data with XGBoost')
     parser.add_argument('--delta', type=float, default=0.5, help='threshold for entering trading (%)')
-    parser.add_argument('--threshold', type=float, default=0.55, help='min confidence level')
+    parser.add_argument('--threshold', type=float, default=0.5, help='min confidence level')
     parser.add_argument('--len_days', type=int, default=4, help='the number of days for an entity')
     args = parser.parse_args()
 
