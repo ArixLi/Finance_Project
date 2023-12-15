@@ -16,7 +16,7 @@ def main():
         description='Predict the High_Open_Ratio with historical data with XGBoost')
     parser.add_argument('--delta', type=float, default=0.5, help='threshold for entering trading (%)')
     parser.add_argument('--threshold', type=float, default=0.55, help='min confidence level')
-    parser.add_argument('--len_days', type=int, default=3, help='the number of days for an entity')
+    parser.add_argument('--len_days', type=int, default=4, help='the number of days for an entity')
     args = parser.parse_args()
 
     # Load the dataset
@@ -46,12 +46,12 @@ def main():
     params = {
         'objective': 'binary:logistic',
         'eval_metric': 'logloss',  # or 'error' for classification error
-        'max_depth': 2,
+        'max_depth': 3,
         'learning_rate': 0.08,
         'n_estimators': 100,
         'subsample': 0.8,
         'colsample_bytree': 0.8,
-        'seed': 42
+        'seed': 43
     }
 
     # Train the XGBoost model
