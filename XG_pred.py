@@ -36,8 +36,6 @@ def main():
     train_label = np.where(train_label >= args.delta, 1.0, 0)
     val_label = np.where(val_label >= args.delta, 1.0, 0)
 
-    print(np.sum(train_label) / len(train_label), np.sum(val_label)/len(val_label))
-
     # Convert the datasets to DMatrix format (XGBoost's internal data structure)
     dtrain = xgb.DMatrix(train_feature, label=train_label)
     dtest = xgb.DMatrix(val_feature, label=val_label)
@@ -66,6 +64,7 @@ def main():
     fpr, tpr, thresholds = roc_curve(gt, pred)
     roc_auc = auc(fpr, tpr)
 
+    # plot ROC curve
     plt.figure()
     plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve\nAUC:{roc_auc:.3f}')
     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
@@ -80,6 +79,7 @@ def main():
     # convert prediction to binary format and get confusion matrix
     bin_pred = np.where(pred >= args.threshold, 1, 0)
 
+    # compute confusion matrix
     conf_matrix = confusion_matrix(gt, bin_pred)
     tn, fp, fn, tp = confusion_matrix(gt, bin_pred).ravel()
     print(f"TN: {tn}, FN: {fn}, TP: {tp}, FP: {fp}")
