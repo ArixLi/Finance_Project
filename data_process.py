@@ -33,12 +33,14 @@ def dm(high, low, length, drift=1):
 
 df = pd.read_csv('dataset/vanilla.csv')
 
-for length in range(10, 40, 2):
+# for length in range(10, 40, 2):
+for length in [14]:
     dmdf = dm(df['High'], df['Low'], length)
     df = pd.concat([df, dmdf], axis=1)
 
 df['High_Open_ration'] = (df['High'] -df['Open']) / df['Open'] * 100
 df['Close_Open_Ratio'] = (df['Close'] -df['Open']) / df['Open'] * 100
+df.to_csv('a.csv')
 
 
 # import data from csv file, exclude the first column Date since we will treat it as a time-series data
