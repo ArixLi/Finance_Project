@@ -18,9 +18,9 @@ def main():
         description='Predict the High_Open_Ratio with historical data')
     parser.add_argument('--num_epochs', type=int, default=15, help='number of epochs to train the soft-prompt')
     parser.add_argument('--bs', type=int, default=16, help='batch size')
-    parser.add_argument('--delta', type=float, default=0.08, help='threshold for entering trading (%)')
-    parser.add_argument('--threshold', type=float, default=0.45, help='min confidence level')
-    parser.add_argument('--len_days', type=int, default=5, help='the number of days for an entity')
+    parser.add_argument('--delta', type=float, default=0.5, help='threshold for entering trading (%)')
+    parser.add_argument('--threshold', type=float, default=0.5, help='min confidence level')
+    parser.add_argument('--len_days', type=int, default=3, help='the number of days for an entity')
     parser.add_argument('--lr', type=float, default=5e-3, help='learning rate')
     args = parser.parse_args()
 
@@ -45,6 +45,10 @@ def main():
     model = ut.SimpleLinearModel(input_size=train_data.size(-1)-1, days=args.len_days)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
     loss_fn = nn.BCELoss()
+
+    # See how many parameters are in the model
+    num_params = sum(p.numel() for p in model.parameters())
+    print(f"Number of parameters in the model: {num_params}")
 
     # define where to store the training logs
     file_name = f"SimpleModel_{args.len_days}"
@@ -92,7 +96,7 @@ def main():
             pred = np.concatenate(pred, axis=0).reshape(-1)
             PL = ut.profit_and_loss(pred, ratio_raw_price[-len(pred):], args)
             if epoch+1 == args.num_epochs:
-                print(PL)
+                print(f"Total PL: {PL}")
                 gt = ratio_raw_price[-len(pred):, 0]
                 gt = np.where(gt > args.delta, 1, 0)
                 fpr, tpr, thresholds = roc_curve(gt, pred)
@@ -123,6 +127,8 @@ def main():
 
     print("Confusion Matrix:")
     print(conf_matrix)
+    tn, fp, fn, tp = confusion_matrix(gt, pred).ravel()
+    print(f"TN: {tn}, FN: {fn}, TP: {tp}, FP: {fp}")
     print(f"Precision: {precision:.4f}")
     print(f"Recall: {recall:.4f}")
     print(f"F1 Score: {f1:.4f}")
