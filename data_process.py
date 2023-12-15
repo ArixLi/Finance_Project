@@ -68,11 +68,9 @@ for indicator in indicators:
             
 base = ["Open", "Close", "High", "Low", "Volume"]
 columns_to_select = [
-    "ABER_ATR_5_15",
     "DMN_14",
     "AO_5_34",
     "APO_12_26",
-    "ATRr_14",
     "BIAS_SMA_26",
     "CMO_14",
     "COPC_11_14_10",
@@ -93,10 +91,6 @@ VIX_columns_to_select = [
     "VIX_WCP", 
     "VIX_OHLC4",
     "VIX_MIDPRICE_2", 
-    "VIX_MIDPOINT_2", 
-    "VIX_HLC3", 
-    "VIX_HL2",
-    "VIX_HA_close", 
     "VIX_LDECAY_5"]
 
 vix_df = vix_df.rename(columns=lambda x: f"VIX_{x}" if x != "Date" else x)
