@@ -34,6 +34,7 @@ def profit_and_loss(pred, data, args):
     threshold = args.threshold
     tot_PL = 0
     for i in range(pred.shape[0]):
+        # When prediction is Long, compute the P&L with the true price
         if pred[i] >= threshold:
             if data[i, 0] >= delta:
                 tot_PL += (data[i, 0] * data[i, 2] * 0.01)

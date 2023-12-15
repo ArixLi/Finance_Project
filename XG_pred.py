@@ -16,11 +16,11 @@ def main():
         description='Predict the High_Open_Ratio with historical data with XGBoost')
     parser.add_argument('--delta', type=float, default=0.5, help='threshold for entering trading (%)')
     parser.add_argument('--threshold', type=float, default=0.5, help='min confidence level')
-    parser.add_argument('--len_days', type=int, default=2, help='the number of days for an entity')
+    parser.add_argument('--len_days', type=int, default=4, help='the length of each day-frame for')
     args = parser.parse_args()
 
     # Load the dataset
-    data = np.load('dataset/try2try.npy')
+    data = np.load('dataset/pca_data_vix.npy')
     ratio_raw_price = data[:, -3:]
     data = data[:, :-2]
     # split the data to fixed time-frame and labels

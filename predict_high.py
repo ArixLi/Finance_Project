@@ -95,6 +95,7 @@ def main():
             test_loss = tot_loss / len(val_ds)
             pred = np.concatenate(pred, axis=0).reshape(-1)
             PL = ut.profit_and_loss(pred, ratio_raw_price[-len(pred):], args)
+            # get the P&L on test data and ROC curve after all trainings
             if epoch+1 == args.num_epochs:
                 print(f"Total PL: {PL}")
                 gt = ratio_raw_price[-len(pred):, 0]
@@ -108,6 +109,7 @@ def main():
     writer.flush()
     writer.close()
 
+    # plot ROC curve
     plt.figure()
     plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve\nAUC:{roc_auc:.3f}')
     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
@@ -119,6 +121,7 @@ def main():
     plt.legend(loc='lower right')
     plt.show()
 
+    # compute confusion matrix
     pred = np.where(pred >= args.threshold, 1, 0)
     conf_matrix = confusion_matrix(gt, pred)
     precision = precision_score(gt, pred)
